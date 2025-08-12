@@ -1,119 +1,149 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React from 'react';
 import {
   View,
   Text,
-  FlatList,
-  Image,
   StyleSheet,
+  FlatList,
   TouchableOpacity,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
+  Image,
+} from 'react-native';
+import { useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import { ROUTES } from '../navigation'; // or replace with 'RecipeDetail'
 
 export default function FavoriteScreen() {
   const navigation = useNavigation();
+  const favoriteRecipesList =
+    useSelector((s) => s.favorites?.favoriterecipes) ?? [];
 
-  // Assuming you have a similar structure for recipes in your Redux store
-  const favoriteRecipes = useSelector((state) => state.favorites);
-  const favoriteRecipesList = favoriteRecipes?.favoriterecipes || [];
-  console.log(favoriteRecipes.favoriterecipes);
-  console.log('favoriteRecipesList',favoriteRecipesList);
-  
-  
+  const renderCard = ({ item }) => {
+    const imgSrc =
+      typeof item.recipeImage === 'number'
+        ? item.recipeImage
+        : item.recipeImage?.uri
+        ? item.recipeImage
+        : { uri: item.recipeImage };
 
-  if (favoriteRecipesList.length === 0) {
+    const title =
+      (item.recipeName || '').length > 20
+        ? item.recipeName.slice(0, 20) + '...'
+        : item.recipeName || '';
+
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No favorite recipes yet!</Text>
-        {/* add back button */}
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{
-            backgroundColor: "#2563EB",
-            padding: 10,
-            borderRadius: 5,
-            marginTop: 10,
-            width: 100,
-            alignItems: "center ",
-          }}
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.9}
+        onPress={() =>
+          navigation.navigate(ROUTES?.RECIPE_DETAIL ?? 'RecipeDetail', item)
+        }
+      >
+        <Image source={imgSrc} style={styles.cardImage} resizeMode="cover" />
+        <Text style={styles.cardTitle}>{title}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  // Empty state
+  if (!favoriteRecipesList.length) {
+    return (
+      <View style={[styles.container, { padding: wp('4%') }]}>
+        <Text style={styles.heading}>My Favorite Recipes</Text>
+        <View
+          testID="favoriteRecipes"
+          style={[styles.panel, { alignItems: 'center', justifyContent: 'center' }]}
         >
-          <Text style={{ color: "#fff" }}>Go back</Text>
+          <Text style={styles.emptyText}>No favorite recipes yet!</Text>
+        </View>
+
+        {/* Go back button (after favoriteRecipes view) */}
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Text style={styles.backTxt}>Go back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
+  // List state
   return (
-    <>
-      {/* Heading */}
-      <View testID="FavoriteRecipes">
-        <Text
-          style={{ fontSize: hp(3.8), marginTop: hp(4), marginLeft: 20 }}
-          className="font-semibold text-neutral-600"
-        >
-          My Favorite Recipes
-        </Text>
-      </View>
-    
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={{
-          backgroundColor: "#2563EB",
-          padding: 10,
-          borderRadius: 5,
-          marginTop: 10,
-          width: 100,
-          alignItems: "center",
-          marginLeft: 20,
-        }}
-      >
-        <Text style={{ color: "#fff" }}>Go back</Text>
+    <View style={[styles.container, { padding: wp('4%') }]}>
+      <Text style={styles.heading}>My Favorite Recipes</Text>
+
+      <View testID="favoriteRecipes" style={styles.panel} />
+
+      {/* Go back button (after favoriteRecipes view) */}
+      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <Text style={styles.backTxt}>Go back</Text>
       </TouchableOpacity>
-    
-    </>
+
+      {/* FlatList of favorites */}
+      <FlatList
+        data={favoriteRecipesList}
+        keyExtractor={(it) => String(it.idC ?? it.idFood ?? it.id)}
+        renderItem={renderCard}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  container: { flex: 1, backgroundColor: '#F3F4F6' },
+  heading: {
+    fontSize: hp('3%'),
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: hp('1.5%'),
   },
-  emptyText: {
-    fontSize: hp(2.5),
-    color: "#6B7280", // text-neutral-600
+  panel: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: wp('3%'),
+    marginBottom: hp('2%'),
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+    minHeight: hp('8%'),
   },
-  listContentContainer: {
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(2),
-  },
-  cardContainer: {
-    backgroundColor: "white",
-    marginBottom: hp(2),
-    padding: wp(4),
+  backBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 10,
-    elevation: 3, // For Android shadow
-    shadowColor: "#000", // For iOS shadow
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    marginBottom: hp('2%'),
+  },
+  backTxt: { color: '#fff', fontWeight: '700' },
+
+  listContent: { paddingBottom: hp('3%') },
+
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: hp('2%'),
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
-  recipeImage: {
-    width: wp(20),
-    height: wp(20),
-    borderRadius: 10,
-    marginRight: wp(4),
+  cardImage: {
+    width: wp('35%'),
+    height: wp('35%'),
+    borderRadius: 16,
   },
-  recipeTitle: {
-    fontSize: hp(2),
-    fontWeight: "bold",
-    color: "#4B5563", // text-neutral-700
+  cardTitle: {
+    marginLeft: 16,
+    fontSize: hp('2.1%'),
+    fontWeight: '700',
+    color: '#374151',
   },
+
+  emptyText: { color: '#6B7280', fontSize: hp('2%') },
 });
