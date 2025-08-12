@@ -1,124 +1,83 @@
-import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    Image,
-    StyleSheet,
-  } from "react-native";
-  import React from "react";
-  import { useNavigation } from "@react-navigation/native"; // Import navigation
-  import {
-    widthPercentageToDP as wp,
-    heightPercentageToDP as hp,
-  } from "react-native-responsive-screen";
-  import Animated, { FadeInDown } from "react-native-reanimated";
-  
-  export default function Categories({
-    categories,
-    activeCategory,
-    handleChangeCategory,
-  }) {
-    const navigation = useNavigation(); // Use navigation
-  
-    return (
-      <Animated.View entering={FadeInDown.duration(500).springify()}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContainer}
-        >
-          {/* Add "My Food" category */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate("MyFood")} // Navigate to "MyFood" screen
-            style={styles.categoryContainer}
-          >
-            <View style={[styles.imageContainer, styles.myFoodButton]}>
-              <Image
-                source={{uri:'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=1926&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'}}
-                style={styles.categoryImage}
-              />
-            </View>
-            <Text style={styles.categoryText}>My Food</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("FavoriteScreen")} // Navigate to "MyFood" screen
-            style={styles.categoryContainer}
-          >
-            <View style={[styles.imageContainer, styles.myFoodButton]}>
-              <Image
-                source={{uri:'https://images.unsplash.com/photo-1463740839922-2d3b7e426a56?q=80&w=1900&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'}}
-                style={styles.categoryImage}
-              />
-            </View>
-            <Text style={styles.categoryText}>My Favorites</Text>
-          </TouchableOpacity>
-  
-          {categories.map((cat, index) => {
-            let isActive = cat.strCategory == activeCategory;
-            let activeButtonStyle = isActive
-              ? styles.activeButton
-              : styles.inactiveButton;
-            return (
-              <TouchableOpacity
-                key={index}
-                onPress={() => handleChangeCategory(cat.strCategory)}
-                style={styles.categoryContainer}
-              >
-                <View style={[styles.imageContainer, activeButtonStyle]}>
-                  <Image
-                    source={{ uri: cat.strCategoryThumb }}
-                    style={styles.categoryImage}
-                  />
-                </View>
-                <Text style={styles.categoryText}>{cat.strCategory}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </Animated.View>
-    );
-  }
-  
-  const styles = StyleSheet.create({
-    scrollContainer: {
-      paddingHorizontal: 15,
-    },
-    categoryContainer: {
-      alignItems: "center",
-      marginRight: wp(4),
-    },
-    imageContainer: {
-      borderRadius: 9999,
-      padding: 6,
-    },
-    activeButton: {
-      backgroundColor: "#F59E0B",
-    },
-    inactiveButton: {
-      backgroundColor: "rgba(0, 0, 0, 0.1)",
-    },
-    categoryImage: {
-      width: hp(6),
-      height: hp(6),
-      borderRadius: 9999,
-    },
-    categoryText: {
-      fontSize: hp(1.6),
-      color: "#52525B",
-      marginTop: hp(0.5),
-    },
-    // Styles for "My Food" category
-    myFoodButton: {
-      backgroundColor: "#4ADE80",
-      justifyContent: "center",
-      alignItems: "center",
-      borderRadius: 50,
-    },
-    myFoodText: {
-      color: "white",
-      fontWeight: "bold",
-      fontSize: hp(1.5),
-    },
-  });
-  
+import React, { memo } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import PropTypes from 'prop-types';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+
+const CategoryItem = ({ item, active, onPress }) => {
+  const isActive = active === item.strCategory;
+
+  return (
+    <TouchableOpacity
+      testID="categoryItem"
+      style={styles.itemWrap}
+      onPress={() => onPress(item.strCategory)}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isActive }}
+      accessibilityLabel={`Category ${item.strCategory}`}
+    >
+      <View style={[styles.thumbWrap, isActive && styles.thumbActive]}>
+        <Image
+          source={item.strCategoryThumb}
+          style={styles.thumb}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      </View>
+      <Text style={[styles.label, isActive && styles.labelActive]} numberOfLines={1}>
+        {item.strCategory}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
+function Categories({ categories, activeCategory, handleChangeCategory }) {
+  return (
+    <FlatList
+      data={categories}
+      keyExtractor={(it) => `${it.idCategory}-${it.strCategory}`}
+      renderItem={({ item }) => (
+        <CategoryItem item={item} active={activeCategory} onPress={handleChangeCategory} />
+      )}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingRight: wp('4%') }}
+    />
+  );
+}
+
+Categories.propTypes = {
+  categories: PropTypes.arrayOf(
+    PropTypes.shape({
+      idCategory: PropTypes.string.isRequired,
+      strCategory: PropTypes.string.isRequired,
+      // can be a local require(...) or { uri }
+      strCategoryThumb: PropTypes.oneOfType([PropTypes.number, PropTypes.object]).isRequired,
+    })
+  ).isRequired,
+  activeCategory: PropTypes.string.isRequired,
+  handleChangeCategory: PropTypes.func.isRequired,
+};
+
+const CIRCLE = wp('16%');
+
+const styles = StyleSheet.create({
+  itemWrap: { marginRight: wp('4%'), alignItems: 'center' },
+  thumbWrap: {
+    width: CIRCLE,
+    height: CIRCLE,
+    borderRadius: 9999,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbActive: {
+    borderWidth: 3,
+    borderColor: '#22C55E', // green ring like the screenshot
+    backgroundColor: '#FEEFC3', // subtle warm bg for active
+  },
+  thumb: { width: CIRCLE * 0.78, height: CIRCLE * 0.78, borderRadius: CIRCLE },
+  label: { marginTop: 6, fontSize: hp('1.6%'), color: '#6B7280' },
+  labelActive: { color: '#111827', fontWeight: '600' },
+});
+
+export default memo(Categories);
